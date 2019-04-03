@@ -85,6 +85,7 @@ INSTALLED_APPS = (
     'webpack_loader',
     'django_filters',
     'mathfilters',
+    'haystack'
 )
 
 SESSION_ENGINE = "django.contrib.sessions.backends.cached_db"
@@ -367,3 +368,13 @@ ORPHANAGE_ROOT_ID = "00000000000000000000000000000000"
 # so we must be very careful to limit code that touches this tree and to carefully check code that does. If we
 # do choose to implement restore of old chefs, we will need to ensure moving nodes does not cause a tree sort.
 DELETED_CHEFS_ROOT_ID = "11111111111111111111111111111111"
+
+# HAYSTACK/ELASTICSEARCH SETTINGS
+ELASTICSEARCH_HOST = os.getenv('ELASTICSEARCH_HOST')
+HAYSTACK_CONNECTIONS = {
+    'default': {
+        'ENGINE': 'haystack_elasticsearch5.Elasticsearch5SearchEngine',
+        'URL': 'http://'+ELASTICSEARCH_HOST+':9200/',
+        'INDEX_NAME': 'haystack',
+    },
+}

@@ -65,6 +65,9 @@ flower = "*"
 kombu = "==4.3"
 singledispatch = "==3.4.0.3"
 backports-abc = "==0.5"
+django-haystack = "*"
+elasticsearch = "*"
+django-haystack-elasticsearch5 = "*"
 
 [dev-packages]
 ipdb = "*"
