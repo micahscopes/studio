@@ -8,12 +8,17 @@ dummyusers:
 	cd contentcuration/ && python manage.py loaddata contentcuration/fixtures/admin_user.json
 	cd contentcuration/ && python manage.py loaddata contentcuration/fixtures/admin_user_token.json
 
-prodceleryworkers:
-	cd contentcuration && celery -A contentcuration worker -l info
-
 prodcelerydashboard:
 	# connect to the celery dashboard by visiting http://localhost:5555
 	kubectl port-forward deployment/master-studio-celery-dashboard 5555
+
+celery_studio_worker:
+	cd contentcuration/ && celery -A contentcuration worker -Q celery -l info -n publishing-worker@%h 
+
+celery_indexing_worker:
+	cd contentcuration/ && celery -A contentcuration worker -Q indexing -l debug -n indexing-worker@%h --without-gossip --without-mingle --without-heartbeat -Ofair -P solo
+
+prodceleryworkers: celery_studio_worker
 
 devserver:
 	yarn run devserver

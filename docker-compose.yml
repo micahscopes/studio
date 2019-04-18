@@ -36,9 +36,13 @@ services:
     ports:
       - "8080:8080"
 
-  celery-worker:
+  studio-worker:
     <<: *studio-worker
-    command: make prodceleryworkers
+    command: make celery_studio_worker
+
+  studio-indexing-worker:
+    <<: *studio-worker
+    command: make celery_indexing_worker
 
   minio:
     image: minio/minio
