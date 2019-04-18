@@ -85,7 +85,8 @@ INSTALLED_APPS = (
     'webpack_loader',
     'django_filters',
     'mathfilters',
-    'haystack'
+    'haystack',
+    'celery_haystack'
 )
 
 SESSION_ENGINE = "django.contrib.sessions.backends.cached_db"
@@ -150,7 +151,6 @@ REST_FRAMEWORK = {
     ),
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework.authentication.SessionAuthentication',
-        # 'rest_framework.authentication.BasicAuthentication',
         'rest_framework.authentication.TokenAuthentication',
     )
 }
@@ -339,6 +339,7 @@ CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TASK_TRACK_STARTED = True
 CELERY_WORKER_SEND_TASK_EVENTS = True
+# CELERY_IMPORTS=('celery_haystack.tasks',)
 
 # When cleaning up orphan nodes, only clean up any that have been last modified
 # since this date
@@ -369,7 +370,7 @@ ORPHANAGE_ROOT_ID = "00000000000000000000000000000000"
 # do choose to implement restore of old chefs, we will need to ensure moving nodes does not cause a tree sort.
 DELETED_CHEFS_ROOT_ID = "11111111111111111111111111111111"
 
-# HAYSTACK/ELASTICSEARCH SETTINGS
+# HAYSTACK/ELASTICSEARCH SETTINGSt
 ELASTICSEARCH_HOST = os.getenv('ELASTICSEARCH_HOST')
 HAYSTACK_CONNECTIONS = {
     'default': {
@@ -378,3 +379,14 @@ HAYSTACK_CONNECTIONS = {
         'INDEX_NAME': 'haystack',
     },
 }
+
+# HAYSTACK_SIGNAL_PROCESSOR = 'haystack.signals.RealtimeSignalProcessor'
+HAYSTACK_SIGNAL_PROCESSOR = 'celery_haystack.signals.CelerySignalProcessor'
+
+#CELERY-HAYSTACK
+CELERY_HAYSTACK_QUEUE = 'indexing'
+CELERY_HAYSTACK_COUNTDOWN = 5
+# CELERY_HAYSTACK_RETRY_DELAY = 5 * 60
+# CELERY_HAYSTACK_MAX_RETRIES = 5
+CELERY_HAYSTACK_HANDLER = 'celery_haystack.handler.CeleryHaystackSignalHandler'
+CELERY_HAYSTACK_DEFAULT_TASK = 'celery_haystack.tasks.haystack_signal_handler'
