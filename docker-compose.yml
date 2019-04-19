@@ -27,6 +27,8 @@ x-studio-worker:
     volumes:
       - .:/src
     environment: *studio-environment
+    stdin_open: true
+    tty: true
 
 services:
   studio-app:
@@ -36,11 +38,11 @@ services:
     ports:
       - "8080:8080"
 
-  studio-worker:
+  celery-worker:
     <<: *studio-worker
     command: make celery_studio_worker
 
-  studio-indexing-worker:
+  indexing-worker:
     <<: *studio-worker
     command: make celery_indexing_worker
 
@@ -76,10 +78,11 @@ services:
     <<: *studio-worker
     working_dir: /src/deploy
     command: /bin/cloudprober --config_file ./cloudprober.cfg
-    # wait until the main app and celery worker have started
+    # wait until the main app and celery workers have started
     depends_on:
       - studio-app
       - celery-worker
+      - indexing-worker
 
 
 volumes:
