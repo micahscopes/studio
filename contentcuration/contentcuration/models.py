@@ -1147,11 +1147,8 @@ class ContentNode(MPTTModel, models.Model):
         order_insertion_by = ['sort_order']
 
     class Meta:
-        verbose_name = _("Topic")
-        verbose_name_plural = _("Topics")
-        # Do not allow two nodes with the same name on the same level
-        # unique_together = ('parent', 'title')
-
+        verbose_name = _("ContentNode")
+        verbose_name_plural = _("ContentNodes")
 
 class ContentKind(models.Model):
     kind = models.CharField(primary_key=True, max_length=200, choices=content_kinds.choices)
