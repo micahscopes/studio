@@ -380,13 +380,10 @@ HAYSTACK_CONNECTIONS = {
     },
 }
 
-# HAYSTACK_SIGNAL_PROCESSOR = 'haystack.signals.RealtimeSignalProcessor'
-HAYSTACK_SIGNAL_PROCESSOR = 'celery_haystack.signals.CelerySignalProcessor'
+HAYSTACK_SIGNAL_PROCESSOR = 'search.search_signals.StudioSignalProcessor'
 
 #CELERY-HAYSTACK
 CELERY_HAYSTACK_QUEUE = 'indexing'
-CELERY_HAYSTACK_COUNTDOWN = 5
-# CELERY_HAYSTACK_RETRY_DELAY = 5 * 60
-# CELERY_HAYSTACK_MAX_RETRIES = 5
+CELERY_HAYSTACK_COUNTDOWN = 0
 CELERY_HAYSTACK_HANDLER = 'celery_haystack.handler.CeleryHaystackSignalHandler'
 CELERY_HAYSTACK_DEFAULT_TASK = 'celery_haystack.tasks.haystack_signal_handler'
