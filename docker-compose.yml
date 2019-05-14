@@ -13,6 +13,7 @@ x-studio-environment:
     CELERY_BROKER_ENDPOINT: redis
     CELERY_RESULT_BACKEND_ENDPOINT: redis
     CELERY_REDIS_PASSWORD: ""
+    ELASTICSEARCH_HOST: elasticsearch
 
 x-studio-worker:
   &studio-worker
