@@ -21,6 +21,11 @@ def get_accessible_contentnodes(request):
     return cc_models.ContentNode.objects \
         .filter(tree_id__in=tree_ids)
 
+from rest_framework.pagination import PageNumberPagination
+class Paginator(PageNumberPagination):
+    page_size = 1
+    page_size_query_param = 'page_size'
+    max_page_size = 1000
 
 @api_view(['GET'])
 def search_items(request):
@@ -35,6 +40,7 @@ def search_items(request):
 
     queryset = get_accessible_contentnodes(request).exclude(kind='topic')
     queryset = queryset.filter(title__icontains=search_query)
+    queryset = Paginator().paginate_queryset(queryset, request)
     # Using same serializer as Tree View UI to match props of ImportListItem
     serializer = serializers.SimplifiedContentNodeSerializer(queryset[:50], many=True)
     return Response(serializer.data)
@@ -52,16 +58,13 @@ def search_topics(request):
 
     queryset = get_accessible_contentnodes(request).filter(kind='topic')
     queryset = queryset.filter(title__icontains=search_query)
+    queryset = Paginator().paginate_queryset(queryset, request)
     serializer = serializers.SimplifiedContentNodeSerializer(queryset[:50], many=True)
     return Response(serializer.data)
 
-
-#
-# views.py
-#
-
 from drf_haystack.serializers import HaystackSerializer
 from drf_haystack.viewsets import HaystackViewSet
+
 
 from .search_indexes import ContentNode
 from .search_indexes import ContentNodeIndex

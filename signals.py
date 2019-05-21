@@ -18,6 +18,7 @@ class CelerySignalProcessor(BaseSignalProcessor):
         signals.post_delete.disconnect(self.enqueue_delete)
 
     def enqueue_save(self, sender, instance, **kwargs):
+        print('enqueue_save')
         return self.enqueue('update', instance, sender, **kwargs)
 
     def enqueue_delete(self, sender, instance, **kwargs):

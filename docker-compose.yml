@@ -46,6 +46,8 @@ services:
   indexing-worker:
     <<: *studio-worker
     command: make celery_indexing_worker
+    depends_on:
+      - elasticsearch
 
   minio:
     image: minio/minio

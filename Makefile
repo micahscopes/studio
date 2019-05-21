@@ -81,7 +81,7 @@ dcbuild:
 
 dcup:
 	# run all services except for cloudprober
-	docker-compose up studio-app celery-worker
+	docker-compose up studio-app celery-worker indexing-worker
 
 dcup-cloudprober:
 	# run all services including cloudprober
