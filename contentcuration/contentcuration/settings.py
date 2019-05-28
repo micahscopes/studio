@@ -374,7 +374,7 @@ DELETED_CHEFS_ROOT_ID = "11111111111111111111111111111111"
 ELASTICSEARCH_HOST = os.getenv('ELASTICSEARCH_HOST')
 HAYSTACK_CONNECTIONS = {
     'default': {
-        'ENGINE': 'haystack_elasticsearch5.Elasticsearch5SearchEngine',
+        'ENGINE': 'search.utils.StudioElasticsearchEngine',
         'URL': 'http://'+ELASTICSEARCH_HOST+':9200/',
         'INDEX_NAME': 'haystack',
     },
