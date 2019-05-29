@@ -2,17 +2,19 @@ from haystack_elasticsearch5 import *
 from elasticsearch.helpers import bulk
 from haystack.constants import ID
 
-def partial_doc(identifier, **fields):
-    doc = {
-        ID: identifier
+def partial_data(identifier, **fields):
+    data = {
+        '_op_type': 'update',
+        '_id': identifier,
     }
-    doc.update(fields)
-    return doc
+    data['doc'] = fields
+    return data
 
 class StudioElasticsearchBackend(Elasticsearch5SearchBackend):
 
-    def partial_update(self, docs):
-        bulk(self.conn, docs, index=self.index_name, doc_type='modelresult')
+    def partial_update(self, data):
+        print(data)
+        bulk(self.conn, data, index=self.index_name, doc_type='modelresult')
         self.conn.indices.refresh(index=self.index_name)
 
 class StudioElasticsearchEngine(Elasticsearch5SearchEngine):

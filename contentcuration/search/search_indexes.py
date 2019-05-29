@@ -2,7 +2,7 @@ from haystack import indexes
 from contentcuration.models import ContentNode, Channel
 from celery_haystack.indexes import CelerySearchIndex
 from haystack.utils import get_identifier, get_model_ct
-from .utils import partial_doc
+from .utils import partial_data
 
 import fields
 
@@ -44,8 +44,8 @@ class ContentNodeIndex(CelerySearchIndex, indexes.Indexable):
         ] if lang else []
 
     def partial_update(self, contentnode, **fields):
-        docs = [partial_doc(get_identifier(contentnode), **fields)]
-        self.get_backend().partial_update(docs)
+        data = [partial_data(get_identifier(contentnode), **fields)]
+        self.get_backend().partial_update(data)
 
     def partial_update_tree(self, parent, **fields):
         child_identifiers = (
@@ -53,9 +53,9 @@ class ContentNodeIndex(CelerySearchIndex, indexes.Indexable):
             for pk in oarent.children.all().values_list('pk', flat=True)
         )
 
-        parent_doc = [partial_doc(get_identifier(contentnode), **fields)]
-        child_docs = [partial_doc(identifier, **fields) for identifier in child_identifiers]
-        self.get_backend().partial_update(parent_doc+child_docs)
+        parent_data = [partial_data(get_identifier(contentnode), **fields)]
+        child_data = [partial_data(identifier, **fields) for identifier in child_identifiers]
+        self.get_backend().partial_update(parent_data+child_data)
 
 
 

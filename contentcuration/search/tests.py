@@ -9,16 +9,27 @@ from contentcuration.models import ContentNode, ContentKind
 
 class TestPartialUpdate(TransactionTestCase):
     def test_partial_update_contentnode(self):
-        import ipdb; ipdb.set_trace()
+        # import ipdb; ipdb.set_trace()
         topic, _ = ContentKind.objects.get_or_create(kind="Topic")
-        node= ContentNode.objects.create(title='Some Topic', kind=topic)
-        titleA = ''.join(choice(ascii_letters) for l in range(23))
-        titleB = ''.join(choice(ascii_letters) for l in range(23))
+        original_title = ''.join(choice(ascii_letters) for l in range(20))
+        node= ContentNode.objects.create(title=original_title, kind=topic)
+        self.assertEqual(
+            len(SearchQuerySet().filter(title=original_title)),
+            1
+        )
 
-        node.title=titleA
-        ContentNodeIndex().partial_update(node, title=titleA)
+        new_title = ''.join(choice(ascii_letters) for l in range(20))
+        ContentNodeIndex().partial_update(node, title=new_title)
 
-        import ipdb; ipdb.set_trace()
+        self.assertEqual(
+            len(SearchQuerySet().filter(title=original_title)),
+            0
+        )
+
+        self.assertEqual(
+            len(SearchQuerySet().filter(title=new_title)),
+            1
+        )
 
 
 
