@@ -43,6 +43,7 @@ from mptt.models import raise_if_unsaved
 from mptt.models import TreeForeignKey
 from mptt.models import TreeManager
 from pg_utils import DistinctSum
+from .signals import changed_tree
 
 from contentcuration.statistics import record_channel_stats
 from contentcuration.utils.parser import load_json_string
@@ -1108,6 +1109,8 @@ class ContentNode(MPTTModel, models.Model):
             original = ContentNode.objects.get(pk=self.pk)
             original.parent.changed = True
             original.parent.save()
+            changed_tree.send(self.__class__, self, original)
+
 
         if self.original_node is None:
             self.original_node = self

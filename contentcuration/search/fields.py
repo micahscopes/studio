@@ -8,10 +8,3 @@ class ChannelIdField(indexes.CharField):
     def prepare(self, obj):
         return str(obj.id)
 
-# class EditorsIdsField(indexes.MultiValueField):
-#     def __init__(self, **kwargs):
-#         kwargs['default'] = '-1'
-#         super(indexes.CharField, self).__init__(**kwargs)
-
-#     def prepare(self, obj):
-#         return str(obj.id)
