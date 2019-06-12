@@ -375,7 +375,7 @@ ELASTICSEARCH_HOST = os.getenv('ELASTICSEARCH_HOST')
 HAYSTACK_CONNECTIONS = {
     'default': {
         'ENGINE': 'search.utils.StudioElasticsearchEngine',
-        'URL': 'http://'+ELASTICSEARCH_HOST+':9200/',
+        'URL': 'http://%s:9200/' % ELASTICSEARCH_HOST,
         'INDEX_NAME': 'haystack',
     },
 }

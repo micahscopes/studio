@@ -1,30 +1,33 @@
 from haystack import indexes
 from celery_haystack.indexes import CelerySearchIndex
-from haystack.utils import get_identifier, get_model_ct
-from .utils import partial_data
+from .partial_update import PartiallyUpdatableIndex
+from contentcuration.models import ContentNode, Channel
 
-import fields
+class ContentNodeChannelInfo(indexes.SearchIndex):
+    # make sure these correspond to actual fields of `contentcuration.models.Channel`
+    channel_pk = indexes.FacetCharField()
+    channel_name = indexes.CharField()
+    channel_public = indexes.FacetBooleanField()
+    channel_deleted = indexes.FacetBooleanField()
 
-class PartialUpdateMixin(object):
-    # Given a queryset, update one or more objects search index document without
-    # touching the main DB.
-    #
-    # Note: index updates performed this way will be overwritten when haystack
-    # reindexes their corresponding objects.
-    def partial_update(self, queryset, **fields):
-        identifiers = (
-            "%s.%s" % (get_model_ct(self.get_model()), pk)
-            for pk in queryset.values_list('pk', flat=True)
-        )
+    @staticmethod
+    def indexed_channel_fields():
+        return [field[len('channel_'):] for field,_ in ContentNodeChannelInfo.fields.items()]
 
-        data = [partial_data(id, **fields) for id in identifiers]
-        self.get_backend().partial_update(data)
+    def prepare_channel_info(self, obj):
+        from contentcuration.models import ContentNode
+        if isinstance(obj, ContentNode):
+            obj = obj.get_channel()
+        if not obj:
+            return dict()
+        return {
+            ('channel_%s' % field): obj.__getattribute__(field)
+            for field in self.indexed_channel_fields()
+        }
 
-class ContentNodeIndex(CelerySearchIndex, indexes.Indexable, PartialUpdateMixin):
+class ContentNodeIndex(ContentNodeChannelInfo, CelerySearchIndex, indexes.Indexable, PartiallyUpdatableIndex):
     text = indexes.CharField(use_template=True, document=True)
     title = indexes.NgramField(model_attr='title')
-    channel_id = fields.ChannelIdField(model_attr='get_channel', faceted=True)
-    channel_info = indexes.MultiValueField(faceted=True)
     content_kind = indexes.CharField(model_attr='kind__kind', faceted=True)
     published = indexes.BooleanField(model_attr='published', faceted=True)
     language = indexes.MultiValueField(faceted=True)
@@ -47,26 +50,12 @@ class ContentNodeIndex(CelerySearchIndex, indexes.Indexable, PartialUpdateMixin)
             lang.ietf_name()
         ] if lang else []
 
-    # def partial_update_tree(self, parent, **fields):
-    #     return self.partial_update(parent.children.all(), **fields)
+    def prepare(self, obj):
+        self.prepared_data = super(ContentNodeIndex, self).prepare(obj)
+        self.prepared_data.update(self.prepare_channel_info(obj))
+        return self.prepared_data
 
-    def prepare_channel_info(self, contentnode):
-        return ContentNodeIndex.get_channel_info(contentnode)
-
-    indexed_channel_fields = [
-        "pk",
-        "title",
-    ]
-
-    @staticmethod
-    def get_channel_info(obj):
-        if isinstance(object, ContentNode):
-            ContentNodeIndex.get_channel_index_info(obj.get_channel())
-        elif isinstance(object, Channel):
-            fields = ContentNodeIndex.indexed_channel_fields
-            return object.values_list(*fields, flat=True)
-
-class ChannelIndex(CelerySearchIndex, indexes.Indexable, PartialUpdateMixin):
+class ChannelIndex(CelerySearchIndex, indexes.Indexable, PartiallyUpdatableIndex):
     text = indexes.CharField(use_template=True, document=True)
     name = indexes.NgramField(model_attr='name')
     public = indexes.BooleanField(model_attr='public', faceted=True)

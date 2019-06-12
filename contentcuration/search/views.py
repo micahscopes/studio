@@ -66,7 +66,7 @@ from drf_haystack.serializers import HaystackSerializer
 from drf_haystack.viewsets import HaystackViewSet
 
 
-from .search_indexes import ContentNode
+from contentcuration.models import ContentNode
 from .search_indexes import ContentNodeIndex
 from contentcuration.serializers import ContentNodeSerializer
 
@@ -82,7 +82,7 @@ class ContentNodeResultSerializer(HaystackSerializer):
         # NOTE: Make sure you don't confuse these with model attributes. These
         # fields belong to the search index!
         fields = [
-            "title", "language", "content_kind", "channel_id", "pk"
+            "title", "language", "content_kind", "channel_pk", "pk"
         ]
 
 

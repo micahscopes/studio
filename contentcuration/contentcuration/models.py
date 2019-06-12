@@ -43,8 +43,7 @@ from mptt.models import raise_if_unsaved
 from mptt.models import TreeForeignKey
 from mptt.models import TreeManager
 from pg_utils import DistinctSum
-from .signals import changed_tree
-
+from .signals import changed_tree, channel_updated
 from contentcuration.statistics import record_channel_stats
 from contentcuration.utils.parser import load_json_string
 
@@ -596,6 +595,7 @@ class Channel(models.Model):
             self.trash_tree.title = self.name
             self.trash_tree.save()
 
+
         if original_channel and not self.main_tree.changed:
             # Changing channel metadata should also mark main_tree as changed
             fields_to_check = ['description', 'language_id', 'thumbnail', 'name', 'thumbnail_encoding', 'deleted']
@@ -609,6 +609,14 @@ class Channel(models.Model):
                     os.unlink(channel_db_url)
                     self.main_tree.published = False
             self.main_tree.save()
+
+        from search.search_indexes import ContentNodeIndex
+
+        if original_channel and any([
+            getattr(self, field) != getattr(original_channel, field)
+            for field in ContentNodeIndex.indexed_channel_fields()
+        ]):
+            channel_updated.send(sender=Channel, channel=self)
 
         super(Channel, self).save(*args, **kwargs)
 
