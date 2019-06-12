@@ -1,3 +1,11 @@
+# TODO:  the partial update code might go well with an abstracted
+# version of the ContentNodeChannelInfo stuff.  They could form
+# something like an "appendage" mixin mechanism, so that indexes could
+# have partially updatable "appendages".  The mixin would handle all
+# of the logic of preparing auxiliary data as well as the partial update
+# itself.  They'd also provide a mechanism for executing the partial
+# update.
+
 from haystack.utils import get_identifier, get_model_ct
 from haystack import indexes
 from haystack_elasticsearch5 import Elasticsearch5SearchBackend, Elasticsearch5SearchEngine
