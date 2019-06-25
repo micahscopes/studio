@@ -6,7 +6,9 @@ from django.core.management import call_command
 from celery_haystack.utils import get_handler, get_identifier
 from celery_haystack import exceptions
 from django.conf import settings
+from itertools import chain
 
+logger = get_task_logger(__name__)
 
 @shared_task(bind=True,
              using=settings.CELERY_HAYSTACK_DEFAULT_ALIAS,
@@ -14,7 +16,8 @@ from django.conf import settings
              default_retry_delay=settings.CELERY_HAYSTACK_RETRY_DELAY)
 def partial_update_subtree(self, parent, fields, **kwargs):
     try:
-        ContentNodeIndex.partial_update_tree(parent, **fields)
+        nodes = chain(parent, parent.children)
+        ContentNodeIndex.partial_update(nodes, **fields)
     except exceptions.IndexOperationException as exc:
         logger.exception(exc)
         self.retry(exc=exc)

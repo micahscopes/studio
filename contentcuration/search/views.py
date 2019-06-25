@@ -1,8 +1,18 @@
+## Original search imports
 from django.db.models import Q
 from contentcuration import models as cc_models
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from contentcuration import serializers
+
+##  haystack/elasticsearch related imports
+from drf_haystack.serializers import HaystackSerializer
+from drf_haystack.viewsets import HaystackViewSet
+from contentcuration.models import ContentNode
+from .search_indexes import ContentNodeIndex
+from contentcuration.serializers import ContentNodeSerializer
+
+
 
 
 def get_accessible_contentnodes(request):

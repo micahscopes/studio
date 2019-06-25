@@ -55,6 +55,14 @@ class ContentNodeIndex(ContentNodeChannelInfo, CelerySearchIndex, indexes.Indexa
         self.prepared_data.update(self.prepare_channel_info(obj))
         return self.prepared_data
 
+    def should_update(self, obj, **kwargs):
+        if obj.kind.pk == 'topic':
+            should_update = not kwargs.get('created')
+        else:
+            should_update = not kwargs.get('created')
+        print("should update???", should_update, obj, kwargs, "parent", obj.parent)
+        return should_update
+
 class ChannelIndex(CelerySearchIndex, indexes.Indexable, PartiallyUpdatableIndex):
     text = indexes.CharField(use_template=True, document=True)
     name = indexes.NgramField(model_attr='name')
@@ -86,3 +94,8 @@ class ChannelIndex(CelerySearchIndex, indexes.Indexable, PartiallyUpdatableIndex
             return [str(ed.id) for ed in channel.editors.all()]
         else:
             return []
+
+    def should_update(self, obj, **kwargs):
+        should_update = not kwargs.get('created')
+        print("should update???", should_update, obj, kwargs, "parent", obj.parent)
+        return should_update

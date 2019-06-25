@@ -1117,7 +1117,7 @@ class ContentNode(MPTTModel, models.Model):
             original = ContentNode.objects.get(pk=self.pk)
             original.parent.changed = True
             original.parent.save()
-            changed_tree.send(self.__class__, self, original)
+            changed_tree.send(self.__class__, contentnode=self)
 
 
         if self.original_node is None:
