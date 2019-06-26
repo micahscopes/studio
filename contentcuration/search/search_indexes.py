@@ -97,5 +97,5 @@ class ChannelIndex(CelerySearchIndex, indexes.Indexable, PartiallyUpdatableIndex
 
     def should_update(self, obj, **kwargs):
         should_update = not kwargs.get('created')
-        print("should update???", should_update, obj, kwargs, "parent", obj.parent)
+        print("should update???", should_update, obj, kwargs)
         return should_update

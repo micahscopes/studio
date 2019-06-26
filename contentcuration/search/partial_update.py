@@ -9,8 +9,14 @@
 from haystack.utils import get_identifier, get_model_ct
 from haystack import indexes
 from haystack_elasticsearch5 import Elasticsearch5SearchBackend, Elasticsearch5SearchEngine
+from celery_haystack.handler import CeleryHaystackSignalHandler
 from elasticsearch.helpers import bulk
 from haystack.constants import ID
+from celery_haystack import exceptions
+import logging
+
+
+logger = logging.getLogger(__name__)
 
 def partial_data(identifier, **fields):
     data = {
@@ -49,3 +55,49 @@ class PartiallyUpdatableIndex(object):
 
         data = [partial_data(id, **fields) for id in identifiers]
         self.get_backend().partial_update(data)
+
+
+class StudioCeleryHaystackSignalHandler(CeleryHaystackSignalHandler):
+
+    def handle_update_subtree_channel_info(self, current_index, using, model_class):
+        from contentcuration.models import Channel, ContentNode
+        # and the instance of the model class with the pk
+
+        instance = self.get_instance(model_class, self.pk)
+        if isinstance(instance, ContentNode):
+            root = instance
+        elif isinstance(instance, Channel):
+            root = instance.main_tree
+        channel_info = current_index.prepare_channel_info(root)
+        subtree = root.get_descendants(include_self=True)
+
+        # Call the appropriate handler of the current index and
+        # handle exception if neccessary
+        try:
+            current_index.partial_update(subtree, **channel_info)
+        except Exception as exc:
+            raise exceptions.IndexOperationException(index=current_index, reason=exc)
+        else:
+            msg = ("Partially updated '%s' (with %s)" %
+                   (self.identifier, self.get_index_name(current_index)))
+            logger.debug(msg)
+
+    def handle(self, action):
+        """
+        Trigger the actual index handler depending on the
+        given action ('update' or 'delete').
+        """
+
+        # Then get the model class for the object path
+        model_class = self.get_model_class()
+
+        for current_index, using in self.get_indexes(model_class):
+
+            if action == 'delete':
+                self.handle_delete(current_index, using, model_class)
+            elif action == 'update':
+                self.handle_update(current_index, using, model_class)
+            elif action == 'update_subtree_channel_info':
+                self.handle_update_subtree_channel_info(current_index, using, model_class)
+            else:
+                raise exceptions.UnrecognizedActionException(action)

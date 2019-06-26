@@ -3,8 +3,9 @@ from django.db import models
 from contentcuration.models import ContentNode, Channel
 from contentcuration.signals import changed_tree, channel_updated
 from .search_indexes import ContentNodeIndex, ContentNodeChannelInfo
+from haystack.utils import get_identifier
 from celery_haystack import signals
-from .search_indexing_tasks import partial_update_subtree
+# from .search_indexing_tasks import partial_update_subtree
 
 
 actively_indexed_models = [ContentNode, Channel]
@@ -27,10 +28,16 @@ class StudioSignalProcessor(signals.CelerySignalProcessor):
         changed_tree.disconnect(self.enqueue_changed_tree, sender=ContentNode)
 
 
-    def enqueue_update_channel_tree(self, channel, **kwargs):
-        channel_info = ContentNodeIndex().prepare_channel_info(channel)
-        partial_update_subtree.apply_async((channel.main_tree, {'channel_info': channel_info}))
+    def enqueue_update_channel_tree(self, sender, channel, **kwargs):
+        return self.enqueue('update_subtree_channel_info', channel, sender, **kwargs)
+        # print("enqueue_update_channel_tree", channel, kwargs)
+        # channel_info = ContentNodeIndex().prepare_channel_info(channel)
+        # root_identifier = get_identifier(channel.main_tree)
+        # partial_update_subtree.apply_async((root_identifier, {'channel_info': channel_info}))
 
-    def enqueue_changed_tree(self, updated_instance, original_instance, **kwargs):
-        channel_info = ContentNodeIndex().prepare_channel_info(updated_instance)
-        partial_update_subtree.apply_async((updated_instance, {'channel_info': channel_info}))
+    def enqueue_changed_tree(self, sender, contentnode, **kwargs):
+        return self.enqueue('update_subtree_channel_info', contentnode, sender, **kwargs)
+        # print("enqueue_changed_tree", contentnode, kwargs)
+        # channel_info = ContentNodeIndex().prepare_channel_info(contentnode)
+        # root_identifier = get_identifier(channel.main_tree)
+        # partial_update_subtree.apply_async((contentnode, {'channel_info': channel_info}))

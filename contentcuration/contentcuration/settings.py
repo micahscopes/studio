@@ -385,5 +385,5 @@ HAYSTACK_SIGNAL_PROCESSOR = 'search.search_signals.StudioSignalProcessor'
 #CELERY-HAYSTACK
 CELERY_HAYSTACK_QUEUE = 'indexing'
 CELERY_HAYSTACK_COUNTDOWN = 0
-CELERY_HAYSTACK_HANDLER = 'celery_haystack.handler.CeleryHaystackSignalHandler'
+CELERY_HAYSTACK_HANDLER = 'search.partial_update.StudioCeleryHaystackSignalHandler'
 CELERY_HAYSTACK_DEFAULT_TASK = 'celery_haystack.tasks.haystack_signal_handler'

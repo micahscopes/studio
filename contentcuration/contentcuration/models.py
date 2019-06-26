@@ -1114,10 +1114,11 @@ class ContentNode(MPTTModel, models.Model):
         # Detect if node has been moved to another tree (if the original parent has not already been marked as changed, mark as changed)
         # Necessary if nodes get deleted/moved to clipboard- user needs to be able to publish "changed" nodes
         if self.pk and ContentNode.objects.filter(pk=self.pk, parent__changed=False).exclude(parent_id=self.parent_id).exists():
+            print("SHOULD CHANGE TREE")
             original = ContentNode.objects.get(pk=self.pk)
             original.parent.changed = True
             original.parent.save()
-            changed_tree.send(self.__class__, contentnode=self)
+        changed_tree.send(self.__class__, contentnode=self)
 
 
         if self.original_node is None:

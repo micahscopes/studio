@@ -5,15 +5,16 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from contentcuration import serializers
 
+from contentcuration.models import ContentNode
+from contentcuration.serializers import ContentNodeSerializer
+
 ##  haystack/elasticsearch related imports
-from drf_haystack.serializers import HaystackSerializer
+from .search_indexes import ContentNodeIndex
+from drf_haystack.serializers import HaystackSerializer, HaystackSerializerMixin
 from drf_haystack.viewsets import HaystackViewSet
 from contentcuration.models import ContentNode
 from .search_indexes import ContentNodeIndex
 from contentcuration.serializers import ContentNodeSerializer
-
-
-
 
 def get_accessible_contentnodes(request):
     exclude_channel = request.query_params.get('exclude_channel', '')
@@ -37,62 +38,56 @@ class Paginator(PageNumberPagination):
     page_size_query_param = 'page_size'
     max_page_size = 1000
 
-@api_view(['GET'])
-def search_items(request):
-    """
-    Keyword search of items (i.e. non-topics)
-    """
-    search_query = request.query_params.get('q', '').strip()
+# @api_view(['GET'])
+# def search_items(request):
+#     """
+#     Keyword search of items (i.e. non-topics)
+#     """
+#     search_query = request.query_params.get('q', '').strip()
 
-    if search_query == '':
-        # TODO maybe return a proper error code
-        return Response([])
+#     if search_query == '':
+#         # TODO maybe return a proper error code
+#         return Response([])
 
-    queryset = get_accessible_contentnodes(request).exclude(kind='topic')
-    queryset = queryset.filter(title__icontains=search_query)
-    queryset = Paginator().paginate_queryset(queryset, request)
-    # Using same serializer as Tree View UI to match props of ImportListItem
-    serializer = serializers.SimplifiedContentNodeSerializer(queryset[:50], many=True)
-    return Response(serializer.data)
-
-
-@api_view(['GET'])
-def search_topics(request):
-    """
-    Keyword search of topics
-    """
-    search_query = request.query_params.get('q', '').strip()
-
-    if search_query == '':
-        return Response([])
-
-    queryset = get_accessible_contentnodes(request).filter(kind='topic')
-    queryset = queryset.filter(title__icontains=search_query)
-    queryset = Paginator().paginate_queryset(queryset, request)
-    serializer = serializers.SimplifiedContentNodeSerializer(queryset[:50], many=True)
-    return Response(serializer.data)
-
-from drf_haystack.serializers import HaystackSerializer
-from drf_haystack.viewsets import HaystackViewSet
+#     queryset = get_accessible_contentnodes(request).exclude(kind='topic')
+#     queryset = queryset.filter(title__icontains=search_query)
+#     queryset = Paginator().paginate_queryset(queryset, request)
+#     # Using same serializer as Tree View UI to match props of ImportListItem
+#     serializer = serializers.SimplifiedContentNodeSerializer(queryset[:50], many=True)
+#     return Response(serializer.data)
 
 
-from contentcuration.models import ContentNode
-from .search_indexes import ContentNodeIndex
-from contentcuration.serializers import ContentNodeSerializer
+# @api_view(['GET'])
+# def search_topics(request):
+#     """
+#     Keyword search of topics
+#     """
+#     search_query = request.query_params.get('q', '').strip()
+
+#     if search_query == '':
+#         return Response([])
+
+#     queryset = get_accessible_contentnodes(request).filter(kind='topic')
+#     queryset = queryset.filter(title__icontains=search_query)
+#     queryset = Paginator().paginate_queryset(queryset, request)
+#     serializer = serializers.SimplifiedContentNodeSerializer(queryset[:50], many=True)
+#     return Response(serializer.data)
 
 
-class ContentNodeResultSerializer(HaystackSerializer):
+
+class ContentNodeResultSerializer(HaystackSerializerMixin, serializers.SimplifiedContentNodeSerializer):
     serialize_objects = True
-    class Meta:
+
+    class Meta(serializers.SimplifiedContentNodeSerializer.Meta):
         # The `index_classes` attribute is a list of which search indexes
         # we want to include in the search.
-        index_classes = [ContentNodeIndex]
+        # index_classes = [ContentNodeIndex]
 
         # The `fields` contains all the fields we want to include.
         # NOTE: Make sure you don't confuse these with model attributes. These
         # fields belong to the search index!
-        fields = [
-            "title", "language", "content_kind", "channel_pk", "pk"
+        search_fields = [
+            "title", "description", "language", "content_kind", "channel_pk", "pk"
         ]
 
 
