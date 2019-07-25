@@ -59,28 +59,35 @@ class PartiallyUpdatableIndex(object):
 
 class StudioCeleryHaystackSignalHandler(CeleryHaystackSignalHandler):
 
-    def handle_update_subtree_channel_info(self, current_index, using, model_class):
+    def handle_update_channel_info(self, current_index, using, model_class):
         from contentcuration.models import Channel, ContentNode
         # and the instance of the model class with the pk
+        partial_updates = []
 
         instance = self.get_instance(model_class, self.pk)
         if isinstance(instance, ContentNode):
             root = instance
+            tree = root.get_descendants(include_self=True)
+            updates = [(tree, current_index.prepare_channel_info(root))]
         elif isinstance(instance, Channel):
-            root = instance.main_tree
-        channel_info = current_index.prepare_channel_info(root)
-        subtree = root.get_descendants(include_self=True)
+            for root in instance.all_trees():
+                root.get_descendants(include_self=True)
+                update = (tree, current_index.prepare_channel_info(root))
+                partial_updates.append(update)
+
+        # import ipdb; ipdb.set_trace()
 
         # Call the appropriate handler of the current index and
         # handle exception if neccessary
-        try:
-            current_index.partial_update(subtree, **channel_info)
-        except Exception as exc:
-            raise exceptions.IndexOperationException(index=current_index, reason=exc)
-        else:
-            msg = ("Partially updated '%s' (with %s)" %
-                   (self.identifier, self.get_index_name(current_index)))
-            logger.debug(msg)
+        for subtree, channel_info in updates:
+            try:
+                current_index.partial_update(subtree, **channel_info)
+            except Exception as exc:
+                raise exceptions.IndexOperationException(index=current_index, reason=exc)
+            else:
+                msg = ("Partially updated '%s' (with %s)" %
+                    (self.identifier, self.get_index_name(current_index)))
+                logger.debug(msg)
 
     def handle(self, action):
         """
@@ -97,7 +104,7 @@ class StudioCeleryHaystackSignalHandler(CeleryHaystackSignalHandler):
                 self.handle_delete(current_index, using, model_class)
             elif action == 'update':
                 self.handle_update(current_index, using, model_class)
-            elif action == 'update_subtree_channel_info':
-                self.handle_update_subtree_channel_info(current_index, using, model_class)
+            elif action == 'update_channel_info':
+                self.handle_update_channel_info(current_index, using, model_class)
             else:
                 raise exceptions.UnrecognizedActionException(action)

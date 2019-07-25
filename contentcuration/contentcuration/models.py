@@ -490,7 +490,6 @@ class Channel(models.Model):
     )
     language = models.ForeignKey('Language', null=True, blank=True, related_name='channel_language')
     trash_tree = models.ForeignKey('ContentNode', null=True, blank=True, related_name='channel_trash')
-    clipboard_tree = models.ForeignKey('ContentNode', null=True, blank=True, related_name='channel_clipboard')
     main_tree = models.ForeignKey('ContentNode', null=True, blank=True, related_name='channel_main')
     staging_tree = models.ForeignKey('ContentNode', null=True, blank=True, related_name='channel_staging')
     chef_tree = models.ForeignKey('ContentNode', null=True, blank=True, related_name='channel_chef')
@@ -533,6 +532,15 @@ class Channel(models.Model):
     @classmethod
     def get_all_channels(cls):
         return cls.objects.select_related('main_tree').prefetch_related('editors', 'viewers').distinct()
+
+    def all_trees(self):
+        return [
+            self.main_tree,
+            self.trash_tree,
+            self.staging_tree,
+            self.chef_tree,
+            self.previous_tree,
+        ]
 
     def resource_size_key(self):
         return "{}_resource_size".format(self.pk)
@@ -971,6 +979,29 @@ class ContentNode(MPTTModel, models.Model):
         except (ObjectDoesNotExist, MultipleObjectsReturned, AttributeError):
             return None
 
+    def get_tree_context(self):
+        try:
+            root = self.get_root()
+            if not root:
+                return (None, None, None)
+
+            channel = Channel.objects.filter(Q(main_tree=root) | Q(chef_tree=root) | Q(trash_tree=root) | Q(staging_tree=root) | Q(previous_tree=root)).first()
+            if channel.main_tree == root:
+                tree = 'main_tree'
+            if channel.chef_tree == root:
+                tree = 'chef_tree'
+            if channel.trash_tree == root:
+                tree = 'trash_tree'
+            if channel.staging_tree == root:
+                tree = 'staging_tree'
+            if channel.previous_tree == root:
+                tree = 'previous_tree'
+
+            return (root, tree, channel)
+
+        except (ObjectDoesNotExist, MultipleObjectsReturned, AttributeError):
+            return (None, None, None)
+
     def get_thumbnail(self):
         # Problems with json.loads, so use ast.literal_eval to get dict
         if self.thumbnail_encoding:
@@ -1100,7 +1131,7 @@ class ContentNode(MPTTModel, models.Model):
         return data
 
     def save(self, *args, **kwargs):  # noqa: C901
-
+        # import ipdb; ipdb.set_trace()
         channel_id = None
         if kwargs.get('request'):
             request = kwargs.pop('request')
@@ -1118,8 +1149,6 @@ class ContentNode(MPTTModel, models.Model):
             original = ContentNode.objects.get(pk=self.pk)
             original.parent.changed = True
             original.parent.save()
-        changed_tree.send(self.__class__, contentnode=self)
-
 
         if self.original_node is None:
             self.original_node = self

@@ -75,7 +75,7 @@ class Paginator(PageNumberPagination):
 
 
 
-class ContentNodeResultSerializer(HaystackSerializerMixin, serializers.SimplifiedContentNodeSerializer):
+class SimpleContentNodeResultSerializer(HaystackSerializerMixin, serializers.SimplifiedContentNodeSerializer):
     serialize_objects = True
 
     class Meta(serializers.SimplifiedContentNodeSerializer.Meta):
@@ -87,7 +87,22 @@ class ContentNodeResultSerializer(HaystackSerializerMixin, serializers.Simplifie
         # NOTE: Make sure you don't confuse these with model attributes. These
         # fields belong to the search index!
         search_fields = [
-            "title", "description", "language", "content_kind", "channel_pk", "pk"
+            "title", "description", "language", "content_kind", "channel_pk", "pk", "in_channel_tree"
+        ]
+
+class ContentNodeResultSerializer(HaystackSerializer):
+    serialize_objects = True
+
+    class Meta:
+        # The `index_classes` attribute is a list of which search indexes
+        # we want to include in the search.
+        index_classes = [ContentNodeIndex]
+
+        # The `fields` contains all the fields we want to include.
+        # NOTE: Make sure you don't confuse these with model attributes. These
+        # fields belong to the search index!
+        search_fields = [
+            "title", "description", "language", "content_kind", "channel_pk", "pk", "in_channel_tree"
         ]
 
 

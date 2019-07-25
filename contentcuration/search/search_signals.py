@@ -29,14 +29,14 @@ class StudioSignalProcessor(signals.CelerySignalProcessor):
 
 
     def enqueue_update_channel_tree(self, sender, channel, **kwargs):
-        return self.enqueue('update_subtree_channel_info', channel, sender, **kwargs)
+        return self.enqueue('update_channel_info', channel, sender, **kwargs)
         # print("enqueue_update_channel_tree", channel, kwargs)
         # channel_info = ContentNodeIndex().prepare_channel_info(channel)
         # root_identifier = get_identifier(channel.main_tree)
         # partial_update_subtree.apply_async((root_identifier, {'channel_info': channel_info}))
 
     def enqueue_changed_tree(self, sender, contentnode, **kwargs):
-        return self.enqueue('update_subtree_channel_info', contentnode, sender, **kwargs)
+        return self.enqueue('update_channel_info', contentnode, sender, **kwargs)
         # print("enqueue_changed_tree", contentnode, kwargs)
         # channel_info = ContentNodeIndex().prepare_channel_info(contentnode)
         # root_identifier = get_identifier(channel.main_tree)

@@ -9,21 +9,32 @@ class ContentNodeChannelInfo(indexes.SearchIndex):
     channel_name = indexes.CharField()
     channel_public = indexes.FacetBooleanField()
     channel_deleted = indexes.FacetBooleanField()
+    in_channel_tree = indexes.FacetCharField()
 
     @staticmethod
     def indexed_channel_fields():
-        return [field[len('channel_'):] for field,_ in ContentNodeChannelInfo.fields.items()]
+        fields = []
+        for field,_ in ContentNodeChannelInfo.fields.items():
+            if field[:len('channel_')] == 'channel_':
+                fields.append(field[len('channel_'):])
+        return fields
 
     def prepare_channel_info(self, obj):
         from contentcuration.models import ContentNode
         if isinstance(obj, ContentNode):
-            obj = obj.get_channel()
+            root, tree, obj = obj.get_tree_context()
         if not obj:
             return dict()
-        return {
+
+        channel_info = {
             ('channel_%s' % field): obj.__getattribute__(field)
             for field in self.indexed_channel_fields()
         }
+
+        channel_info['in_channel_tree'] = tree
+        import ipdb; ipdb.set_trace()
+        return channel_info
+
 
 class ContentNodeIndex(ContentNodeChannelInfo, CelerySearchIndex, indexes.Indexable, PartiallyUpdatableIndex):
     text = indexes.CharField(use_template=True, document=True)

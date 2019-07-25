@@ -44,6 +44,7 @@ from contentcuration.serializers import SimplifiedContentNodeSerializer
 from contentcuration.tasks import getnodedetails_task
 from contentcuration.utils.files import duplicate_file
 
+from contentcuration.signals import changed_tree
 
 @authentication_classes((TokenAuthentication, SessionAuthentication))
 @permission_classes((IsAuthenticated,))
@@ -519,6 +520,8 @@ def _move_node(node, parent=None, sort_order=None, channel_id=None):
             for n in descendants.filter(tags=tag):
                 n.tags.remove(tag)
                 n.tags.add(t)
+
+    changed_tree.send(node.__class__, contentnode=node)
 
     return node
 

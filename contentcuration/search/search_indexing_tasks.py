@@ -14,7 +14,7 @@
 #              using=settings.CELERY_HAYSTACK_DEFAULT_ALIAS,
 #              max_retries=settings.CELERY_HAYSTACK_MAX_RETRIES,
 #              default_retry_delay=settings.CELERY_HAYSTACK_RETRY_DELAY)
-# def partial_update_subtree_channel_info(self, parent_identifier, fields, **kwargs):
+# def partial_update_channel_info(self, parent_identifier, fields, **kwargs):
 #     try:
 #         handler = get_handler()(parent_identifier)
 #         model_class = handler.get_model_class()
