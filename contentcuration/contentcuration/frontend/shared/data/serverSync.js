@@ -1,6 +1,8 @@
 import debounce from 'lodash/debounce';
 import get from 'lodash/get';
 import pick from 'lodash/pick';
+import sortBy from 'lodash/sortBy';
+import isEqual from 'lodash/isEqual';
 import applyChanges from './applyRemoteChanges';
 import { createChannel } from './broadcastChannel';
 import { hasActiveLocks, cleanupLocks } from './changes';
@@ -137,6 +139,19 @@ function trimChangeForSync(change) {
   }
 }
 
+function _coolChangeChecker(changes, contextInfo) {
+  let changeRevs = changes.map(c => c.rev);
+  let sortedChangeRevs = sortBy(changes, 'rev').map(c => c.rev);
+  console.log(
+    contextInfo,
+    "sorted?",
+    isEqual(changeRevs, sortedChangeRevs),
+    JSON.stringify(
+      changes.map(c => [c.obj?.assessment_id?.substring(0, 5), c.rev, c.obj?.question]),
+      null, 2),
+  );
+}
+
 function syncChanges() {
   // Note: we could in theory use Dexie syncable for what
   // we are doing here, but I can't find a good way to make
@@ -173,12 +188,15 @@ function syncChanges() {
               .limit(SYNC_BUFFER)
               .sortBy('rev')
               .then(changes => {
+                _coolChangeChecker(changes, "syncChanges")
                 // Continue to merge on to the existing changes we have merged
                 changesToSync = mergeAllChanges(changes, finalRecursion, changesToSync);
+                _coolChangeChecker(changesToSync, "syncChanges squashed")
                 // Check that we have not got all of the records in this last pass
                 if (!finalRecursion) {
                   // We've handled all the changes in this chunk,
                   // so now let's increment and do the next one.
+                  console.log('sync batchnot final recurstion');
                   i += SYNC_BUFFER;
                   return processNextChunk(changesToSync);
                 } else {
@@ -309,6 +327,7 @@ if (process.env.NODE_ENV !== 'production') {
 }
 
 function handleChanges(changes) {
+  _coolChangeChecker(changes,'handleChanges');
   changes.map(applyResourceListener);
   const syncableChanges = changes.filter(isSyncableChange).map(change => {
     // Filter out the rev property as we want that to be assigned during the bulkPut
@@ -316,13 +335,16 @@ function handleChanges(changes) {
     return filteredChange;
   });
 
+  _coolChangeChecker(syncableChanges, "handleChanges syncableChanges")
   const lockChanges = changes.find(
     change => change.table === CHANGE_LOCKS_TABLE && change.type === CHANGE_TYPES.DELETED
   );
 
   if (syncableChanges.length) {
     // Flatten any changes before we store them in the changes table
-    db[CHANGES_TABLE].bulkPut(mergeAllChanges(syncableChanges, true));
+    let mergedChanges = mergeAllChanges(syncableChanges, true);
+    _coolChangeChecker(mergedChanges, "handleChanges merged changes")
+    db[CHANGES_TABLE].bulkPut(mergedChanges);
   }
 
   // If we detect locks were removed, or changes were written to the changes table

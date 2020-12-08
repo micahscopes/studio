@@ -24,7 +24,7 @@
               <VFlex xs1 mt-2>
                 {{ idx + 1 }}
               </VFlex>
-
+              <h1>{{item.assessment_id.substring(0,5)}}</h1>
               <VFlex
                 v-if="!isItemActive(item)"
                 xs10
