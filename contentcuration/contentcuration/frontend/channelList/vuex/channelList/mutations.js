@@ -30,19 +30,23 @@ export function ADD_CHANNEL_DETAILS(state, { id, details }) {
 /* INVITATION MUTATIONS */
 export function SET_INVITATION_LIST(state, invitations) {
   const invitationsMap = {};
-  invitations.forEach(invitation => {
-    // If accepted or declined keys are defined, use their
-    // value, otherwise set them explicitly to `false`.
-    let { accepted, declined } = invitation;
-    accepted = accepted || false;
-    declined = declined || false;
+  invitations
+    .filter(i => !i.accepted && !i.declined && !i.revoked)
+    .forEach(invitation => {
+      // If accepted or declined keys are defined, use their
+      // value, otherwise set them explicitly to `false`.
+      let { accepted, declined, revoked } = invitation;
+      accepted = accepted || false;
+      declined = declined || false;
+      revoked = revoked || false;
 
-    invitationsMap[invitation.id] = {
-      ...invitation,
-      accepted,
-      declined,
-    };
-  });
+      invitationsMap[invitation.id] = {
+        ...invitation,
+        accepted,
+        declined,
+        revoked,
+      };
+    });
   state.invitationsMap = invitationsMap;
 }
 

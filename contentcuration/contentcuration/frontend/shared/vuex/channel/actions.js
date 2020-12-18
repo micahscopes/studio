@@ -244,36 +244,24 @@ export function loadChannelUsers(context, channelId) {
   return Promise.all([
     ChannelUser.where({ channel: channelId }),
     Invitation.where({ channel: channelId }),
-  ])
-    .then(results => {
-      context.commit('SET_USERS_TO_CHANNEL', { channelId, users: results[0] });
-      context.commit('ADD_INVITATIONS', results[1]);
-    })
-    .then(() => {
-      Invitation.where({ declined: true }).then(invitations => {
-        invitations.forEach(i => context.commit('DELETE_INVITATION', i.id));
-      });
-    });
+  ]).then(results => {
+    context.commit('SET_USERS_TO_CHANNEL', { channelId, users: results[0] });
+    context.commit(
+      'ADD_INVITATIONS',
+      results[1].filter(i => !i.revoked && !i.accepted && !i.declined)
+    );
+  });
 }
 
 export function sendInvitation(context, { channelId, email, shareMode }) {
-  return client
-    .post(window.Urls.send_invitation_email(), {
-      user_email: email,
-      share_mode: shareMode,
-      channel_id: channelId,
-    })
-    .then(response => {
-      context.commit('ADD_INVITATION', response.data);
-    });
+  return Invitation.sendInvitation({ channelId, email, shareMode }).then(invitation => {
+    context.commit('ADD_INVITATION', invitation);
+  });
 }
 
 export function deleteInvitation(context, invitationId) {
-  // return Invitation.delete(invitationId).then(() => {
-  //   context.commit('DELETE_INVITATION', invitationId);
-  // });
   // Update so that other user's invitations disappear
-  return Invitation.update(invitationId, { declined: true }).then(() => {
+  return Invitation.update(invitationId, { revoked: true }).then(() => {
     context.commit('DELETE_INVITATION', invitationId);
   });
 }

@@ -152,7 +152,7 @@
         const invitations = this.invitations;
         return (
           invitations
-            .filter(i => !i.accepted && !i.declined)
+            .filter(i => !i.accepted && !i.declined && !i.revoked)
             .filter(i => ChannelInvitationMapping[i.share_mode] === this.currentListType) || []
         );
       },
@@ -160,7 +160,11 @@
         let inviteMap = {};
         Object.values(ChannelListTypes).forEach(type => {
           inviteMap[type] = this.invitations.filter(
-            i => !i.accepted && !i.declined && ChannelInvitationMapping[i.share_mode] === type
+            i =>
+              !i.accepted &&
+              !i.declined &&
+              !i.revoked &&
+              ChannelInvitationMapping[i.share_mode] === type
           ).length;
         });
         return inviteMap;
