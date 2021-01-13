@@ -20,6 +20,8 @@
  */
 import Dexie from 'dexie';
 import flatMap from 'lodash/flatMap';
+import flatten from 'lodash/flatten';
+import last from 'lodash/last';
 import { CHANGE_TYPES } from './constants';
 import { INDEXEDDB_RESOURCES } from './registry';
 
@@ -30,11 +32,20 @@ function applyModifications(obj, modifications) {
   return obj;
 }
 
+// function combineCreateAndMove(oldChange, newChange) {
+//   applyModifications(oldChange.obj, newChange.mods);
+//   return oldChange;
+// }
+
 function combineCreateAndUpdate(oldChange, newChange) {
   // Apply modifications to existing object.
   // Passed in object should be modifiable, so no need to clone.
   applyModifications(oldChange.obj, newChange.mods);
   return oldChange;
+}
+
+function combineMoveAndMove(oldChange, newChange) {
+  return combineUpdateAndUpdate(oldChange, newChange);
 }
 
 function combineUpdateAndUpdate(oldChange, newChange) {
@@ -86,6 +97,11 @@ function mergeChanges(oldChange, newChange) {
           // Object created and then deleted.
           // return null to indicate the change should be deleted.
           return null;
+        case CHANGE_TYPES.MOVED:
+          // Apply modifications but don't merge these.
+          applyModifications(oldChange.obj, newChange);
+          return [oldChange, newChange];
+
       }
       break;
     case CHANGE_TYPES.UPDATED:
@@ -99,6 +115,10 @@ function mergeChanges(oldChange, newChange) {
         case CHANGE_TYPES.DELETED:
           // Only send the delete change. What was updated earlier is no longer of interest.
           return newChange;
+        case CHANGE_TYPES.MOVED:
+          // Apply modifications to object, but keep changes separate.
+          applyModifications(oldChange.obj, newChange);
+          return [oldChange, newChange];
       }
       break;
     case CHANGE_TYPES.DELETED:
@@ -114,8 +134,27 @@ function mergeChanges(oldChange, newChange) {
         case CHANGE_TYPES.DELETED:
           // Still a delete change. Leave as is.
           return oldChange;
+        case CHANGE_TYPES.MOVED:
+          // Still a delete change. Leave as is.
+          return oldChange;
       }
       break;
+    case CHANGE_TYPES.MOVED:
+      switch(newChange.type) {
+        case CHANGE_TYPES.CREATED:
+          // Another CHANGE_TYPES.CREATED replaces a move move.
+          return newChange;
+        case CHANGE_TYPES.UPDATED:
+          // Apply modifications but don't merge these.
+          applyModifications(oldChange.obj, newChange);
+          return [oldChange, newChange];
+        case CHANGE_TYPES.DELETED:
+          // Only send the delete change. What was updated earlier is no longer of interest.
+          return newChange;
+        case CHANGE_TYPES.MOVED:
+          // Apply modifications to object, but keep changes separate.
+          return combineMoveAndMove(oldChange, newChange);
+      }
   }
 }
 
@@ -123,6 +162,7 @@ const mergeableChanges = new Set([
   CHANGE_TYPES.CREATED,
   CHANGE_TYPES.UPDATED,
   CHANGE_TYPES.DELETED,
+  CHANGE_TYPES.MOVED,
 ]);
 
 export default function mergeAllChanges(changes, flatten = false, changesToSync = null) {
@@ -147,21 +187,22 @@ export default function mergeAllChanges(changes, flatten = false, changesToSync 
     // Ignore changes initiated by non-Resource registered tables
     if (changesToSync[change.table]) {
       if (mergeableChanges.has(change.type)) {
-        if (!changesToSync[change.table][change.key]) {
-          // If we have no changes for this object already, just put this straight in
-          changesToSync[change.table][change.key] = change;
+        if (!(change.key in changesToSync[change.table])) {
+          // If we have no changes for this object already, initialize with an singleton array
+          changesToSync[change.table][change.key] = [change];
+        }
+        // Otherwise we need to reconcile the changes.
+        const previousChange = last(changesToSync[change.table][change.key]);
+        const mergedChanges = mergeChanges(previousChange, change);
+        if (mergedChanges) {
+          // Update the rev to that of the newest change
+          mergedChanges = flatten([mergedChanges]);
+          last(mergedChanges).rev = change.rev;
+          changesToSync[change.table][change.key] = mergedChanges;
         } else {
-          // Otherwise we need to reconcile the changes.
-          const updatedChange = mergeChanges(changesToSync[change.table][change.key], change);
-          if (updatedChange) {
-            // Update the rev to that of the newest change
-            updatedChange.rev = change.rev;
-            changesToSync[change.table][change.key] = updatedChange;
-          } else {
-            // If the mergeChanges function returned a null value,
-            // means we should delete the change entirely.
-            delete changesToSync[change.table][change.key];
-          }
+          // If the mergeChanges function returned a null value,
+          // means we should delete the change entirely.
+          delete changesToSync[change.table][change.key];
         }
       } else {
         changesToSync['unmergeableChanges'][change.rev] = change;

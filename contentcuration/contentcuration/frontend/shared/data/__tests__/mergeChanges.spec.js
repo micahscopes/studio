@@ -1,4 +1,5 @@
 import mergeAllChanges from 'shared/data/mergeChanges';
+import { CHANGE_TYPES } from './constants';
 
 describe('Merge all changes', () => {
   const initialQuestionValue = '';
@@ -9,7 +10,7 @@ describe('Merge all changes', () => {
     {
       table: 'assessmentitem',
       key: ['contentnode_1', 'assessment_x'],
-      type: 2,
+      type: CHANGE_TYPES.UPDATED,
       mods: {
         question: 'What',
       },
@@ -28,7 +29,7 @@ describe('Merge all changes', () => {
     {
       table: 'assessmentitem',
       key: ['contentnode_1', 'assessment_x'],
-      type: 2,
+      type: CHANGE_TYPES.UPDATED,
       mods: {
         question: 'What is',
       },
@@ -47,7 +48,7 @@ describe('Merge all changes', () => {
     {
       table: 'assessmentitem',
       key: ['contentnode_1', 'assessment_x'],
-      type: 2,
+      type: CHANGE_TYPES.UPDATED,
       mods: {
         question: finalQuestionValue,
       },
@@ -84,7 +85,7 @@ describe('Merge all changes', () => {
     const createChange = () => ({
       table: 'assessmentitem',
       key: ['contentnode_1', 'assessment_x'],
-      type: 1,
+      type: CHANGE_TYPES.CREATED,
       obj: {
         assessment_id: 'assessment_x',
         contentnode: 'contentnode_1',
@@ -122,4 +123,6 @@ describe('Merge all changes', () => {
       expect(() => mergeAllChanges(disorderedChanges, true)).toThrow(Error);
     });
   });
+
+  describe('merging updates with ')
 });
